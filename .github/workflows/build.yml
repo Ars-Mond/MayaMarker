@@ -9,22 +9,18 @@ jobs:
   release:
     name: Create release
     runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.release.outputs.upload_url }}
     steps:
       - name: Create release
         id: release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ github.ref }}
-          release_name: App-${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          name: App-${{ github.ref_name }}
           prerelease: true
+          generate_release_notes: true
 
   build:
     name: Build Tauri App
-    needs: release
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -52,22 +48,9 @@ jobs:
         run: |
           echo "TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
           
-      - name: Upload DMG
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: src-tauri/target/release/bundle/dmg/*.dmg
-          asset_name: App-${{ env.TAG }}-macos.dmg
-          asset_content_type: application/octet-stream
-          
-      - name: Upload App Bundle
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: src-tauri/target/release/bundle/macos/*.app.tar.gz
-          asset_name: App-${{ env.TAG }}-macos.app.tar.gz
-          asset_content_type: application/gzip
+          files: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/macos/*.app.tar.gz
